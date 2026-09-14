@@ -1,0 +1,7 @@
+aiosqlite>=0.22.0
+fastapi>=0.141.0
+loguru>=0.7.2
+pydantic>=2.13.0
+pydantic-settings>=2.15.0
+uvicorn[standard]>=0.52.0
+websockets>=17.0
