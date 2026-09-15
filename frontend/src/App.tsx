@@ -1,9 +1,18 @@
+import { useState } from "react";
+import { ChatScreen } from "./components/ChatScreen";
+import { LoginScreen } from "./components/LoginScreen";
 import "./index.css";
 
 export function App() {
+  const [username, setUsername] = useState<string | null>(null);
+
   return (
-    <main className="container mx-auto p-8">
-      <h1 className="text-3xl font-bold"></h1>
+    <main className="flex h-dvh w-5xl ">
+      {username ? (
+        <ChatScreen username={username} onLogout={() => setUsername(null)} />
+      ) : (
+        <LoginScreen onLogin={setUsername} />
+      )}
     </main>
   );
 }
