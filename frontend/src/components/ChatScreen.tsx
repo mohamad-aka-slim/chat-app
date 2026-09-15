@@ -42,7 +42,7 @@ export function ChatScreen({
   };
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-2xl flex-col gap-4 p-4">
+    <div className="mx-auto flex h-full w-2xl flex-col gap-4 p-4">
       <header className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h1 className="truncate text-xl font-bold"># {roomName}</h1>
@@ -61,11 +61,9 @@ export function ChatScreen({
             const isOwn = msg.user === username;
             return (
               <div key={msg.id} className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
-                <span className="mb-1 text-xs text-muted-foreground">
-                  {msg.user} · {formatTime(msg.at)}
-                </span>
+
                 <div
-                  className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
+                  className={`max-w-[75%] rounded-lg px-3 mb-1 py-2 text-sm ${
                     isOwn
                       ? "rounded-br-sm bg-primary text-primary-foreground"
                       : "rounded-bl-sm border bg-background"
@@ -73,6 +71,9 @@ export function ChatScreen({
                 >
                   {msg.text}
                 </div>
+                <span className="mb-1 text-xs text-muted-foreground">
+                  {msg.user} · {formatTime(msg.at)}
+                </span>
               </div>
             );
           })

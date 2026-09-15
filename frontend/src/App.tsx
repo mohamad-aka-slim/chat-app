@@ -1,34 +1,55 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChatScreen } from "./components/ChatScreen";
 import { LoginScreen } from "./components/LoginScreen";
 import { RoomScreen, type Room } from "./components/RoomScreen";
+import { api } from "./services/api";
 import "./index.css";
 
+type User = { id: number; username: string };
+
 export function App() {
-  const [username, setUsername] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [room, setRoom] = useState<Room | null>(null);
 
-  const createRoom = (name: string) => {
-    const newRoom: Room = { id: String(Date.now()), name, createdBy: username ?? "unknown" };
-    setRooms((prev) => [...prev, newRoom]);
-    setRoom(newRoom);
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    api.getRooms().then((data) => {
+      if (!cancelled) setRooms(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const handleCreateRoom = async (name: string,description?:string) => {
+    if (!user) return;
+    const created = await api.createRoom(name, user.id,description);
+    setRooms((prev) => [...prev, created]);
+    setRoom(created);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setRoom(null);
+    setRooms([]);
   };
 
   return (
-    <main className="flex h-dvh w-full">
-      {username === null ? (
-        <LoginScreen onLogin={setUsername} />
+    <main className="flex h-dvh">
+      {user === null ? (
+        <LoginScreen onLogin={setUser} />
       ) : room === null ? (
         <RoomScreen
-          username={username}
+          username={user.username}
           rooms={rooms}
-          onCreateRoom={createRoom}
+          onCreateRoom={handleCreateRoom}
           onJoinRoom={setRoom}
-          onLogout={() => setUsername(null)}
+          onLogout={handleLogout}
         />
       ) : (
-        <ChatScreen username={username} roomName={room.name} onLeave={() => setRoom(null)} />
+        <ChatScreen username={user.username} roomName={room.name} onLeave={() => setRoom(null)} />
       )}
     </main>
   );
