@@ -1,23 +1,3 @@
-import sys
-from pathlib import Path
-
-import pytest
-from fastapi.testclient import TestClient
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-import database
-from main import app
-
-
-@pytest.fixture
-def client(tmp_path):
-    database.DATABASE_URL = str(tmp_path / "test.db")
-    with TestClient(app) as test_client:
-        yield test_client
-    database.DATABASE_URL = "database.db"
-
-
 def create_user(client, username="alice"):
     return client.post("/api/user", json={"username": username})
 
@@ -31,6 +11,12 @@ def test_root(client):
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Hello World"}
+
+
+def test_health(client):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 
 def test_create_and_get_user(client):
