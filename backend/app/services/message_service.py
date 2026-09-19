@@ -1,7 +1,7 @@
 from app.core.exceptions import ResourceNotFoundError
 from app.db.repositories import messages as messages_repository
 from app.db.repositories import rooms as rooms_repository
-from app.models.schemas import MessageResponse, WebSocketIncomingMessage
+from app.schemas import MessageResponse, WebSocketIncomingMessage
 
 
 async def list_messages(room_id: int, limit: int = 50) -> list[MessageResponse]:

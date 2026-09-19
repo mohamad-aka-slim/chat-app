@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.models.schemas import CreateRoomRequest, MessageResponse, RoomResponse
+from app.schemas import CreateRoomRequest, MessageResponse, RoomResponse
 from app.services import message_service, room_service
 
 router = APIRouter(prefix="/api/rooms", tags=["rooms"])

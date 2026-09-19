@@ -1,6 +1,6 @@
 from app.core.exceptions import ResourceNotFoundError
 from app.db.repositories import users as users_repository
-from app.models.schemas import CreateUserRequest, User
+from app.schemas import CreateUserRequest, User
 
 
 async def create_user(payload: CreateUserRequest) -> User:

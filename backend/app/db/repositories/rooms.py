@@ -1,58 +1,48 @@
+from sqlalchemy import func, select
+
 from app.db.database import get_db
-from app.models.schemas import RoomResponse
+from app.models import Message, Room as RoomModel
+from app.schemas import RoomResponse
 
 
 async def create_room(name: str, description: str | None, created_by: int) -> int:
-    async with get_db() as db:
-        cursor = await db.execute(
-            "INSERT INTO rooms (name, description, created_by) VALUES (?, ?, ?)",
-            (name, description, created_by),
-        )
-        await db.commit()
-        return cursor.lastrowid
+    async with get_db() as session:
+        room = RoomModel(name=name, description=description, created_by=created_by)
+        session.add(room)
+        await session.commit()
+        return room.id
 
 
 async def get_all_rooms() -> list[RoomResponse]:
-    async with get_db() as db:
-        cursor = await db.execute(
-            """
-            SELECT r.id, r.name, r.description, COUNT(m.id) AS message_count
-            FROM rooms r
-            LEFT JOIN messages m ON r.id = m.room_id
-            GROUP BY r.id
-            ORDER BY r.id
-            """
+    async with get_db() as session:
+        result = await session.execute(
+            select(RoomModel, func.count(Message.id))
+            .outerjoin(Message, Message.room_id == RoomModel.id)
+            .group_by(RoomModel.id)
+            .order_by(RoomModel.id)
         )
-        rows = await cursor.fetchall()
         return [
             RoomResponse(
-                id=row[0],
-                name=row[1],
-                description=row[2],
-                message_count=row[3],
+                id=room.id,
+                name=room.name,
+                description=room.description,
+                message_count=message_count,
             )
-            for row in rows
+            for room, message_count in result.all()
         ]
 
 
 async def get_room(room_id: int) -> RoomResponse | None:
-    async with get_db() as db:
-        cursor = await db.execute(
-            """
-            SELECT r.id, r.name, r.description, COUNT(m.id) AS message_count
-            FROM rooms r
-            LEFT JOIN messages m ON r.id = m.room_id
-            WHERE r.id = ?
-            GROUP BY r.id
-            """,
-            (room_id,),
-        )
-        row = await cursor.fetchone()
-        if row is None:
+    async with get_db() as session:
+        room = await session.get(RoomModel, room_id)
+        if room is None:
             return None
+        message_count = await session.scalar(
+            select(func.count(Message.id)).where(Message.room_id == room_id)
+        )
         return RoomResponse(
-            id=row[0],
-            name=row[1],
-            description=row[2],
-            message_count=row[3],
+            id=room.id,
+            name=room.name,
+            description=room.description,
+            message_count=message_count or 0,
         )

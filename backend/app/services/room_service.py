@@ -1,5 +1,5 @@
 from app.db.repositories import rooms as rooms_repository
-from app.models.schemas import CreateRoomRequest, RoomResponse
+from app.schemas import CreateRoomRequest, RoomResponse
 
 
 async def create_room(payload: CreateRoomRequest) -> RoomResponse:

@@ -1,62 +1,58 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-import aiosqlite
+from sqlalchemy import event
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.core.config import settings
+from app.models import Base
 
 DATABASE_URL: str = settings.database_url
 
+_engine: AsyncEngine | None = None
+_engine_url: str | None = None
+
+async_session = async_sessionmaker(expire_on_commit=False)
+
+
+def _async_url(url: str) -> str:
+    if url.startswith("sqlite+aiosqlite"):
+        return url
+    if url.startswith("sqlite://"):
+        return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+    return f"sqlite+aiosqlite:///{url}"
+
+
+def _enable_foreign_keys(dbapi_conn, _records) -> None:
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON")
+    cursor.close()
+
+
+def get_engine() -> AsyncEngine:
+    global _engine, _engine_url
+
+    url = _async_url(DATABASE_URL)
+    if _engine is None or _engine_url != url:
+        if _engine is not None:
+            _engine.sync_engine.dispose()
+        _engine = create_async_engine(url)
+        event.listen(_engine.sync_engine, "connect", _enable_foreign_keys)
+        _engine_url = url
+    return _engine
+
 
 @asynccontextmanager
-async def get_db() -> AsyncIterator[aiosqlite.Connection]:
-    async with aiosqlite.connect(DATABASE_URL) as db:
-        await db.execute("PRAGMA foreign_keys = ON")
-        yield db
+async def get_db() -> AsyncIterator[AsyncSession]:
+    async with async_session(bind=get_engine()) as session:
+        yield session
 
 
 async def init_db() -> None:
-    async with get_db() as db:
-        await db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-
-        await db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS rooms (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                description TEXT,
-                created_by INTEGER NOT NULL REFERENCES users(id),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-
-        await db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                room_id INTEGER NOT NULL REFERENCES rooms(id),
-                user_id INTEGER NOT NULL REFERENCES users(id),
-                username TEXT NOT NULL,
-                content TEXT NOT NULL,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-
-        await db.execute(
-            "CREATE INDEX IF NOT EXISTS idx_messages_room_id ON messages(room_id)"
-        )
-        await db.execute(
-            "CREATE INDEX IF NOT EXISTS idx_messages_room_timestamp "
-            "ON messages(room_id, timestamp)"
-        )
-        await db.commit()
+    async with get_engine().begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

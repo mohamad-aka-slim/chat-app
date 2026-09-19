@@ -4,7 +4,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
 from pydantic import ValidationError
 
-from app.models.schemas import WebSocketIncomingMessage
+from app.schemas import WebSocketIncomingMessage
 from app.services import message_service, room_service
 from app.ws.manager import connection_manager
 
