@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { ChatScreen } from "./components/ChatScreen";
-import { LoginScreen } from "./components/LoginScreen";
-import { RoomScreen, type Room } from "./components/RoomScreen";
+import { MainLayout } from "./layouts/MainLayout";
+import { ChatPage } from "./pages/ChatPage";
+import { LoginPage } from "./pages/LoginPage";
+import { RoomsPage } from "./pages/RoomsPage";
 import { api } from "./services/api";
 import "./index.css";
+import type { Room } from "./types/Room";
+import type { User } from "./types/User";
 
-type User = { id: number; username: string };
+
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -37,11 +40,11 @@ export function App() {
   };
 
   return (
-    <main className="flex h-dvh">
+    <MainLayout>
       {user === null ? (
-        <LoginScreen onLogin={setUser} />
+        <LoginPage onLogin={setUser} />
       ) : room === null ? (
-        <RoomScreen
+        <RoomsPage
           username={user.username}
           rooms={rooms}
           onCreateRoom={handleCreateRoom}
@@ -49,9 +52,9 @@ export function App() {
           onLogout={handleLogout}
         />
       ) : (
-        <ChatScreen username={user.username} roomName={room.name} onLeave={() => setRoom(null)} />
+        <ChatPage username={user.username} roomId={room.id} roomName={room.name} onLeave={() => setRoom(null)} />
       )}
-    </main>
+    </MainLayout>
   );
 }
 
