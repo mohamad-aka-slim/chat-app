@@ -1,6 +1,7 @@
+import { config } from "@/lib/config";
 import type { SendMessagePayload, WsIncoming } from "@/types/Message";
 
-const WS_BASE = import.meta.env.BUN_PUBLIC_WS_BASE ?? "ws://localhost:8000";
+const WS_BASE = config.wsBase;
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 

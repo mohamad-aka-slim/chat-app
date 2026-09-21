@@ -1,8 +1,9 @@
+import { config } from "@/lib/config";
 import type { CreateRoomPayload, Room } from "@/types/Room";
 import type { CreateUserPayload, User } from "@/types/User";
 import type { Message } from "@/types/Message";
 
-const API_BASE = import.meta.env.BUN_PUBLIC_API_BASE ?? "http://localhost:8000/api";
+const API_BASE = config.apiBase;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
