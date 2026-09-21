@@ -1,5 +1,6 @@
 import type { CreateRoomPayload, Room } from "@/types/Room";
 import type { CreateUserPayload, User } from "@/types/User";
+import type { Message } from "@/types/Message";
 
 const API_BASE = 'http://localhost:8000/api';
 
@@ -31,6 +32,13 @@ export const api = {
             body: JSON.stringify(payload),
         });
         if (!response.ok) throw new Error(`Failed to create room: HTTP ${response.status}`);
+        return response.json();
+    },
+
+    // Message endpoints
+    getMessages: async (roomId: number): Promise<Message[]> => {
+        const response = await fetch(`${API_BASE}/rooms/${roomId}/messages`);
+        if (!response.ok) throw new Error(`Failed to load messages: HTTP ${response.status}`);
         return response.json();
     },
 }

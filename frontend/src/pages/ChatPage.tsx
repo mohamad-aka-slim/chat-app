@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useKey } from "@/hooks/useKey";
+import { api } from "@/services/api";
+import { chatWS } from "@/services/websocket";
 import { LIMITS } from "@/types/limits";
-import type { Message } from "@/types/Message";
+import type { Message, WsIncoming } from "@/types/Message";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -10,11 +13,13 @@ function formatTime(iso: string) {
 
 export function ChatPage({
   username,
+  userId,
   roomId,
   roomName,
   onLeave,
 }: {
   username: string;
+  userId: number;
   roomId: number;
   roomName: string;
   onLeave: () => void;
@@ -22,25 +27,39 @@ export function ChatPage({
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+  const nextKey = useKey();
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const onMessage = (msg: WsIncoming) => {
+      if (msg.type !== "message") return;
+      setMessages((prev) => [...prev, { ...msg, id: msg.id ?? -nextKey() }]);
+    };
+
+    api.getMessages(roomId)
+      .then((history) => {
+        if (!cancelled) setMessages(history);
+      })
+      .catch(() => {});
+
+    chatWS.connect(roomId, onMessage);
+
+    return () => {
+      cancelled = true;
+      chatWS.disconnect();
+    };
+  }, [roomId]);
+
   const sendMessage = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const text = draft.trim();
     if (text.length < LIMITS.message.min || text.length > LIMITS.message.max) return;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        room_id: roomId,
-        username,
-        content: text,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
+    chatWS.send({ room_id: roomId, user_id: userId, username, content: text });
     setDraft("");
   };
 

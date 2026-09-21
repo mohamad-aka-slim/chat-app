@@ -52,7 +52,7 @@ export function App() {
           onLogout={handleLogout}
         />
       ) : (
-        <ChatPage username={user.username} roomId={room.id} roomName={room.name} onLeave={() => setRoom(null)} />
+        <ChatPage username={user.username} userId={user.id} roomId={room.id} roomName={room.name} onLeave={() => setRoom(null)} />
       )}
     </MainLayout>
   );
