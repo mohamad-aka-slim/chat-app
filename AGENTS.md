@@ -17,11 +17,10 @@ Flutter-free monorepo: two independent apps, no root tooling. Run each from its 
 ### Gotchas
 - ORM model PKs are `Mapped[int]` autoincrement (matches `database.db`); timestamps use `server_default=func.current_timestamp()` to mirror SQLite `DEFAULT CURRENT_TIMESTAMP`. Schema is client-side insensitive: `create_all` won't alter existing tables.
 - `database.get_engine()` rebuilds the async engine when `DATABASE_URL` changes (this is how per-test tmp DBs take effect); PRAGMA foreign_keys is enabled per-connection.
-- Working tree has an in-progress, uncommitted backend refactor (schemas moved into `app/schemas/`, `app/models/schemas.py` deleted, raw SQL → SQLAlchemy ORM). Verify current state with `git status` before assuming structure.
 
 ## Frontend (`frontend/`)
 
 - Use `bun`, not npm. `bun install`, `bun dev` (dev server w/ hot reload), `bun run build.ts` (builds to `dist/`), `bun start` (production). Typecheck: `bunx tsc --noEmit`.
 - Path alias `@/*` → `src/*`. Shared UI components in `src/components/ui/` (Tailwind v4 via `bun-plugin-tailwind`).
-- API base URL is hardcoded in `src/services/api.ts` (`http://localhost:8000/api`); WebSocket URL is hardcoded in `src/services/websocket.ts`. The WS URL (`ws://localhost:8000/ws/${roomId}`) is stale — the backend only serves `/rooms/{id}/ws`. If you touch the WS client, fix this to match.
+- API base URL is hardcoded in `src/services/api.ts` (`http://localhost:8000/api`); WebSocket URL is hardcoded in `src/services/websocket.ts` (`ws://localhost:8000`). WS joins `/rooms/{id}/ws` — matching the backend — with session-token reconnect (3s + 3s/attempt, max 5).
 - Browser env vars must be prefixed `BUN_PUBLIC_` (see `bunfig.toml`); only those are exposed to client code.
