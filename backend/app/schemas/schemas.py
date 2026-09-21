@@ -56,6 +56,7 @@ class MessageResponse(BaseModel):
 
     id: int
     room_id: int
+    user_id: int
     username: str
     content: str
     timestamp: datetime

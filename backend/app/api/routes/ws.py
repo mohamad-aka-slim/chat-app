@@ -5,7 +5,7 @@ from loguru import logger
 from pydantic import ValidationError
 
 from app.schemas import WebSocketIncomingMessage
-from app.services import message_service, room_service
+from app.services import message_service, room_service, user_service
 from app.ws.manager import connection_manager
 
 router = APIRouter(tags=["websocket"])
@@ -38,12 +38,19 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int) -> None:
                 )
                 continue
 
-            await message_service.save_message(payload)
+            if not await user_service.user_exists(payload.user_id):
+                await websocket.send_json(
+                    {"type": "error", "detail": "User not found"}
+                )
+                continue
+
+            message_id = await message_service.save_message(payload)
 
             message = {
                 "type": "message",
-                "id": raw.get("id"),
+                "id": message_id,
                 "room_id": room_id,
+                "user_id": payload.user_id,
                 "username": payload.username,
                 "content": payload.content,
                 "timestamp": datetime.now(timezone.utc).isoformat(),

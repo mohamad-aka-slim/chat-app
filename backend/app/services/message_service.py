@@ -10,8 +10,8 @@ async def list_messages(room_id: int, limit: int = 50) -> list[MessageResponse]:
     return await messages_repository.get_messages(room_id, limit)
 
 
-async def save_message(payload: WebSocketIncomingMessage) -> None:
-    await messages_repository.save_message(
+async def save_message(payload: WebSocketIncomingMessage) -> int:
+    return await messages_repository.save_message(
         room_id=payload.room_id,
         user_id=payload.user_id,
         username=payload.username,

@@ -39,6 +39,18 @@ def test_create_user_rejects_short_username(client):
     assert response.status_code == 422
 
 
+def test_create_duplicate_user_returns_200(client):
+    created = create_user(client)
+    duplicate = create_user(client)
+    assert duplicate.status_code == 200
+    assert duplicate.json()["id"] == created.json()["id"]
+
+
+def test_user_created_at_is_utc(client):
+    created = create_user(client).json()
+    assert created["created_at"].endswith("+00:00") or created["created_at"].endswith("Z")
+
+
 def test_create_and_list_rooms(client):
     create_user(client)
     created = create_room(client)
@@ -81,9 +93,14 @@ def test_websocket_chat_flow(client):
         assert echoed["type"] == "message"
         assert echoed["content"] == "hello world"
         assert echoed["username"] == user["username"]
+        assert echoed["user_id"] == user["id"]
+        assert echoed["id"] is not None
+        assert echoed["timestamp"].endswith("+00:00") or echoed["timestamp"].endswith("Z")
 
     messages = client.get(f"/api/rooms/{room['id']}/messages").json()
     assert [m["content"] for m in messages] == ["hello world"]
+    assert messages[0]["user_id"] == user["id"]
+    assert messages[0]["timestamp"].endswith("+00:00") or messages[0]["timestamp"].endswith("Z")
 
 
 def test_websocket_rejects_invalid_message(client):
@@ -101,3 +118,21 @@ def test_websocket_room_not_found(client):
         error = ws.receive_json()
         assert error["type"] == "error"
         assert error["detail"] == "Room not found"
+
+
+def test_websocket_rejects_unknown_user(client):
+    user = create_user(client).json()
+    room = create_room(client, created_by=user["id"]).json()
+
+    with client.websocket_connect(f"/rooms/{room['id']}/ws") as ws:
+        ws.send_json(
+            {
+                "room_id": room["id"],
+                "user_id": 99999,
+                "username": "ghost",
+                "content": "hello",
+            }
+        )
+        error = ws.receive_json()
+        assert error["type"] == "error"
+        assert error["detail"] == "User not found"

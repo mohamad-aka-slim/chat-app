@@ -1,5 +1,6 @@
 from sqlalchemy import select
 
+from app.core.datetime import ensure_utc
 from app.db.database import get_db
 from app.models import Message
 from app.schemas import MessageResponse
@@ -7,17 +8,18 @@ from app.schemas import MessageResponse
 
 async def save_message(
     room_id: int, user_id: int, username: str, content: str
-) -> None:
+) -> int:
     async with get_db() as session:
-        session.add(
-            Message(
-                room_id=room_id,
-                user_id=user_id,
-                username=username,
-                content=content,
-            )
+        message = Message(
+            room_id=room_id,
+            user_id=user_id,
+            username=username,
+            content=content,
         )
+        session.add(message)
         await session.commit()
+        await session.refresh(message)
+        return message.id
 
 
 async def get_messages(room_id: int, limit: int = 50) -> list[MessageResponse]:
@@ -34,9 +36,10 @@ async def get_messages(room_id: int, limit: int = 50) -> list[MessageResponse]:
             MessageResponse(
                 id=message.id,
                 room_id=message.room_id,
+                user_id=message.user_id,
                 username=message.username,
                 content=message.content,
-                timestamp=message.timestamp,
+                timestamp=ensure_utc(message.timestamp),
             )
             for message in reversed(messages)
         ]

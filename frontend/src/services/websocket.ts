@@ -34,10 +34,15 @@ class ChatWebSocket {
             this.onMessage?.(JSON.parse(event.data) as WsIncoming);
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
             if (session !== this.session) return;
-            this.reconnect(roomId);
+            if (this.isRetryableClose(event.code)) this.reconnect(roomId);
         };
+    }
+
+    /** Intentional server/clients closes we never recover from. Everything else (drops, restarts) we retry. */
+    private isRetryableClose(code: number) {
+        return ![1000, 1001, 1008, 1009, 1010].includes(code);
     }
 
     private reconnect(roomId: number) {

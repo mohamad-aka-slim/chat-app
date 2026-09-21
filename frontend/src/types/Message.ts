@@ -2,6 +2,7 @@
 export type Message = {
     id: number;
     room_id: number;
+    user_id: number;
     username: string;
     content: string;
     timestamp: string;
@@ -18,8 +19,9 @@ export type SendMessagePayload = {
 // Matches backend WS broadcast / error frames.
 export type WsMessage = {
     type: "message";
-    id: number | null;
+    id: number;
     room_id: number;
+    user_id: number;
     username: string;
     content: string;
     timestamp: string;
