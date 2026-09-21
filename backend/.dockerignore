@@ -1,0 +1,15 @@
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.vscode
+logs
+database.db
+*.db
+.env
+tests
+.git
+.gitignore
+pytest.ini
+requirements-dev.txt

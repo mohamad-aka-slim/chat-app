@@ -1,0 +1,14 @@
+node_modules
+dist
+out
+.env
+.env.*
+!.env.example
+logs
+.git
+.gitignore
+README.md
+components.json
+tsconfig.json
+bun-env.d.ts
+build.ts
