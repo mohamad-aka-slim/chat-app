@@ -1,12 +1,29 @@
 @import "../styles/globals.css";
 
 @layer base {
-  :root {
+  html {
     @apply font-sans;
   }
 
   body {
-    @apply grid place-items-center min-w-[320px] min-h-screen relative m-0 bg-background text-foreground;
+    @apply m-0 min-h-screen min-w-[320px] bg-background text-foreground antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ring/60;
   }
 }
 

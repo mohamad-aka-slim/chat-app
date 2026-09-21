@@ -17,3 +17,12 @@ declare module "*.module.css" {
   const classes: { readonly [key: string]: string };
   export = classes;
 }
+
+interface ImportMetaEnv {
+  readonly BUN_PUBLIC_API_BASE?: string;
+  readonly BUN_PUBLIC_WS_BASE?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}

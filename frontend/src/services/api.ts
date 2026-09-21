@@ -2,43 +2,40 @@ import type { CreateRoomPayload, Room } from "@/types/Room";
 import type { CreateUserPayload, User } from "@/types/User";
 import type { Message } from "@/types/Message";
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = import.meta.env.BUN_PUBLIC_API_BASE ?? "http://localhost:8000/api";
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+    const response = await fetch(`${API_BASE}${path}`, {
+        headers: { "Content-Type": "application/json" },
+        ...init,
+    });
+    if (!response.ok) {
+        throw new Error(`Request failed: HTTP ${response.status}`);
+    }
+    return response.json() as Promise<T>;
+}
 
 export const api = {
     // User endpoints
-    createUser: async (username: string): Promise<User> => {
+    createUser: (username: string): Promise<User> => {
         const payload: CreateUserPayload = { username };
-        const response = await fetch(`${API_BASE}/user`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        return request<User>("/user", {
+            method: "POST",
             body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error(`Failed to create user: HTTP ${response.status}`);
-        return response.json();
     },
 
     // Room endpoints
-    getRooms: async (): Promise<Room[]> => {
-        const response = await fetch(`${API_BASE}/rooms`);
-        if (!response.ok) throw new Error(`Failed to list rooms: HTTP ${response.status}`);
-        return response.json();
-    },
+    getRooms: (): Promise<Room[]> => request<Room[]>("/rooms"),
 
-    createRoom: async (name: string, createdBy: number, description?: string): Promise<Room> => {
+    createRoom: (name: string, createdBy: number, description?: string): Promise<Room> => {
         const payload: CreateRoomPayload = { name, description: description ?? null, created_by: createdBy };
-        const response = await fetch(`${API_BASE}/rooms`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        return request<Room>("/rooms", {
+            method: "POST",
             body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error(`Failed to create room: HTTP ${response.status}`);
-        return response.json();
     },
 
     // Message endpoints
-    getMessages: async (roomId: number): Promise<Message[]> => {
-        const response = await fetch(`${API_BASE}/rooms/${roomId}/messages`);
-        if (!response.ok) throw new Error(`Failed to load messages: HTTP ${response.status}`);
-        return response.json();
-    },
-}
+    getMessages: (roomId: number): Promise<Message[]> => request<Message[]>(`/rooms/${roomId}/messages`),
+};

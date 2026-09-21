@@ -1,8 +1,10 @@
 import type { SendMessagePayload, WsIncoming } from "@/types/Message";
 
-const WS_BASE = "ws://localhost:8000";
+const WS_BASE = import.meta.env.BUN_PUBLIC_WS_BASE ?? "ws://localhost:8000";
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;
+
+export type ConnStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
 class ChatWebSocket {
     private ws: WebSocket | null = null;
@@ -11,11 +13,18 @@ class ChatWebSocket {
     private reconnectAttempts = 0;
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     private onMessage: ((msg: WsIncoming) => void) | null = null;
+    private onStatus: ((status: ConnStatus) => void) | null = null;
 
-    connect(roomId: number, onMessage: (msg: WsIncoming) => void) {
+    connect(
+        roomId: number,
+        onMessage: (msg: WsIncoming) => void,
+        onStatus: (status: ConnStatus) => void,
+    ) {
         this.disconnect();
         this.closed = false;
         this.onMessage = onMessage;
+        this.onStatus = onStatus;
+        this.onStatus("connecting");
         this.openSocket(roomId, this.session);
     }
 
@@ -25,8 +34,8 @@ class ChatWebSocket {
 
         ws.onopen = () => {
             if (session !== this.session) return;
-            console.log("Connected");
             this.reconnectAttempts = 0;
+            this.onStatus?.("connected");
         };
 
         ws.onmessage = (event) => {
@@ -36,18 +45,26 @@ class ChatWebSocket {
 
         ws.onclose = (event) => {
             if (session !== this.session) return;
-            if (this.isRetryableClose(event.code)) this.reconnect(roomId);
+            if (this.isRetryableClose(event.code)) {
+                this.reconnect(roomId);
+            } else {
+                this.onStatus?.("disconnected");
+            }
         };
     }
 
-    /** Intentional server/clients closes we never recover from. Everything else (drops, restarts) we retry. */
+    /** Intentional server/client closes we never recover from. Everything else (drops, restarts) we retry. */
     private isRetryableClose(code: number) {
         return ![1000, 1001, 1008, 1009, 1010].includes(code);
     }
 
     private reconnect(roomId: number) {
         if (this.closed) return;
-        if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
+        if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            this.onStatus?.("disconnected");
+            return;
+        }
+        this.onStatus?.("reconnecting");
         this.reconnectAttempts++;
         this.reconnectTimer = setTimeout(() => {
             this.reconnectTimer = null;
@@ -65,6 +82,10 @@ class ChatWebSocket {
         this.closed = true;
         this.session++;
         this.onMessage = null;
+        if (this.onStatus) {
+            this.onStatus("disconnected");
+            this.onStatus = null;
+        }
         if (this.reconnectTimer !== null) {
             clearTimeout(this.reconnectTimer);
             this.reconnectTimer = null;
