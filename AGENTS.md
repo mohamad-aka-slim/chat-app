@@ -22,5 +22,6 @@ Flutter-free monorepo: two independent apps, no root tooling. Run each from its 
 
 - Use `bun`, not npm. `bun install`, `bun dev` (dev server w/ hot reload), `bun run build.ts` (builds to `dist/`), `bun start` (production). Typecheck: `bunx tsc --noEmit`.
 - Path alias `@/*` → `src/*`. Shared UI components in `src/components/ui/` (Tailwind v4 via `bun-plugin-tailwind`).
-- API base URL is hardcoded in `src/services/api.ts` (`http://localhost:8000/api`); WebSocket URL is hardcoded in `src/services/websocket.ts` (`ws://localhost:8000`). WS joins `/rooms/{id}/ws` — matching the backend — with session-token reconnect (3s + 3s/attempt, max 5).
+- API/WS base URLs come from `BUN_PUBLIC_API_BASE` / `BUN_PUBLIC_WS_BASE` env vars (inline at build/dev time) with `http://localhost:8000/api` / `ws://localhost:8000` fallbacks (see `frontend/.env.example`). WS joins `/rooms/{id}/ws` — matching the backend — with session-token reconnect (3s + 3s/attempt, max 5; no retry on 1000/1001/1008/1009/1010).
 - Browser env vars must be prefixed `BUN_PUBLIC_` (see `bunfig.toml`); only those are exposed to client code.
+- Login session + dark/light theme persist in `localStorage` under `chatterbox:` keys (see `src/lib/session.ts`, `src/hooks/useDarkMode.ts`). There is no backend auth yet — identity is a username returned idempotently by `POST /api/user`.

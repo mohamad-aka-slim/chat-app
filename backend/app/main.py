@@ -1,5 +1,10 @@
 import time
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+# Allow `python app/main.py` (as documented) in addition to `python -m app.main`.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
